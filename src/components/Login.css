@@ -15,9 +15,29 @@
   border-radius: 24px;
   padding: 48px 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 400;
 }
 
 .login-form {
@@ -40,10 +60,12 @@
 .input-icon {
   position: absolute;
   left: 16px;
-  color: #9ca3af;
-  font-size: 18px;
+  color: #6b7280;
   z-index: 1;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-input {
@@ -104,23 +126,7 @@
   padding-right: 48px;
 }
 
-.role-select {
-  cursor: pointer;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 12px center;
-  background-repeat: no-repeat;
-  background-size: 16px;
-  padding-right: 40px;
-}
 
-.role-select option {
-  background: white;
-  color: #374151;
-  padding: 8px;
-}
 
 .error-message {
   background: #fef2f2;
@@ -176,6 +182,18 @@
     padding: 32px 24px;
     border-radius: 16px;
   }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  .login-subtitle {
+    font-size: 14px;
+  }
+
+  .login-header {
+    margin-bottom: 24px;
+  }
   
   .login-input {
     padding: 14px 14px 14px 44px;
@@ -184,7 +202,6 @@
   
   .input-icon {
     left: 14px;
-    font-size: 16px;
   }
 }
 
