@@ -3,4 +3,41 @@
 /* Custom styles */
 body {
   font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* Global mobile improvements */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Improve touch targets on mobile */
+button, a, input, select, textarea {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Better mobile typography */
+@media (max-width: 768px) {
+  html {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  body {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+/* Ensure mobile viewports don't overflow */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remove tap highlights on mobile */
+button, a {
+  -webkit-tap-highlight-color: transparent;
 }
