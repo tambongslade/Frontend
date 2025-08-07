@@ -1,27 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './BloodUsage.css';
 
-interface BloodUsageData {
-  patient_id: string;
-  patient_name: string;
-  patient_age: number | '';
-  patient_gender: string;
-  blood_type: string;
+interface BloodUsageRecord {
+  purpose: string;
+  department: string;
+  blood_group: string;
+  volume_given_out: number;
   usage_date: string;
-  hospital_department: string;
-  notes?: string;
+  individual_name: string;
+  patient_location: string;
+  usage_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BloodUsageData {
+  purpose: string;
+  department: string;
+  blood_group: string;
+  volume_given_out: number | '';
+  usage_date: string;
+  individual_name: string;
+  patient_location: string;
+}
+
+interface FilterParams {
+  blood_group: string;
+  usage_date_from: string;
+  usage_date_to: string;
+  patient_location: string;
+  limit: number;
+  offset: number;
 }
 
 const BloodUsage: React.FC = () => {
+  const [usageRecords, setUsageRecords] = useState<BloodUsageRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  
   const [formData, setFormData] = useState<BloodUsageData>({
-    patient_id: '',
-    patient_name: '',
-    patient_age: '',
-    patient_gender: '',
-    blood_type: '',
+    purpose: '',
+    department: '',
+    blood_group: '',
+    volume_given_out: '',
     usage_date: '',
-    hospital_department: '',
-    notes: ''
+    individual_name: '',
+    patient_location: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -29,9 +53,20 @@ const BloodUsage: React.FC = () => {
   const [success, setSuccess] = useState('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState<FilterParams>({
+    blood_group: '',
+    usage_date_from: '',
+    usage_date_to: '',
+    patient_location: '',
+    limit: 100,
+    offset: 0
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  const genders = ['M', 'F', 'Other'];
   const departments = [
     'Emergency Department',
     'Surgery',
@@ -45,11 +80,110 @@ const BloodUsage: React.FC = () => {
     'Trauma Unit'
   ];
 
+  const handleCancel = useCallback(() => {
+    setFormData({
+      purpose: '',
+      department: '',
+      blood_group: '',
+      volume_given_out: '',
+      usage_date: '',
+      individual_name: '',
+      patient_location: ''
+    });
+    setError('');
+    setSuccess('');
+    setShowAddForm(false);
+  }, []);
+
+  useEffect(() => {
+    fetchUsageRecords();
+  }, []);
+
+  // Modal keyboard and body scroll handling
+  useEffect(() => {
+    if (showAddForm) {
+      // Disable body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Add ESC key listener
+      const handleEscKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          handleCancel();
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscKey);
+      
+      return () => {
+        document.body.style.overflow = 'unset';
+        document.removeEventListener('keydown', handleEscKey);
+      };
+    }
+  }, [showAddForm, handleCancel]);
+
+  const fetchUsageRecords = async (filterParams?: Partial<FilterParams>) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Use provided filters or current state filters
+      const currentFilters = filterParams || filters;
+      
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('limit', currentFilters.limit.toString());
+      queryParams.append('offset', currentFilters.offset.toString());
+      
+      if (currentFilters.blood_group) {
+        queryParams.append('blood_group', currentFilters.blood_group);
+      }
+      if (currentFilters.usage_date_from) {
+        queryParams.append('usage_date_from', currentFilters.usage_date_from);
+      }
+      if (currentFilters.usage_date_to) {
+        queryParams.append('usage_date_to', currentFilters.usage_date_to);
+      }
+      if (currentFilters.patient_location) {
+        queryParams.append('patient_location', currentFilters.patient_location);
+      }
+
+      const response = await fetch(`https://blood-management-system-xplx.onrender.com/api/v1/blood-bank/usage?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch usage records');
+      }
+
+      const data = await response.json();
+      setUsageRecords(Array.isArray(data) ? data : data.records || []);
+      
+      // If response includes total count, use it for pagination
+      if (data.total !== undefined) {
+        setTotalRecords(data.total);
+      } else {
+        setTotalRecords(Array.isArray(data) ? data.length : data.records?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching usage records:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load usage records');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name.includes('age') 
+      [name]: name.includes('volume_given_out') 
         ? (value === '' ? '' : Number(value))
         : value
     }));
@@ -63,6 +197,39 @@ const BloodUsage: React.FC = () => {
     } else {
       setError('Please select a valid CSV file');
     }
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: name === 'limit' || name === 'offset' ? Number(value) : value
+    }));
+  };
+
+  const applyFilters = () => {
+    const newFilters = { ...filters, offset: 0 }; // Reset to first page
+    setFilters(newFilters);
+    fetchUsageRecords(newFilters);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      blood_group: '',
+      usage_date_from: '',
+      usage_date_to: '',
+      patient_location: '',
+      limit: 100,
+      offset: 0
+    };
+    setFilters(clearedFilters);
+    fetchUsageRecords(clearedFilters);
+  };
+
+  const handlePageChange = (newOffset: number) => {
+    const newFilters = { ...filters, offset: newOffset };
+    setFilters(newFilters);
+    fetchUsageRecords(newFilters);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,14 +246,13 @@ const BloodUsage: React.FC = () => {
 
       // Prepare the data for submission
       const submissionData = {
-        patient_id: formData.patient_id,
-        patient_name: formData.patient_name,
-        patient_age: formData.patient_age,
-        patient_gender: formData.patient_gender,
-        blood_type: formData.blood_type,
+        purpose: formData.purpose,
+        department: formData.department,
+        blood_group: formData.blood_group,
+        volume_given_out: formData.volume_given_out,
         usage_date: formData.usage_date,
-        hospital_department: formData.hospital_department,
-        notes: formData.notes
+        individual_name: formData.individual_name,
+        patient_location: formData.patient_location
       };
 
       const response = await fetch('https://blood-management-system-xplx.onrender.com/api/v1/blood-bank/usage', {
@@ -104,19 +270,22 @@ const BloodUsage: React.FC = () => {
       }
 
       const data = await response.json();
-      setSuccess(`Blood usage recorded successfully! Usage ID: ${data.usage_record_id || data.id || 'Generated'}`);
+      setSuccess(`Blood usage recorded successfully! Usage ID: ${data.usage_id || data.id || 'Generated'}`);
       
       // Reset form
       setFormData({
-        patient_id: '',
-        patient_name: '',
-        patient_age: '',
-        patient_gender: '',
-        blood_type: '',
+        purpose: '',
+        department: '',
+        blood_group: '',
+        volume_given_out: '',
         usage_date: '',
-        hospital_department: '',
-        notes: ''
+        individual_name: '',
+        patient_location: ''
       });
+      
+      // Refresh the usage records list
+      fetchUsageRecords();
+      setShowAddForm(false);
       
     } catch (error) {
       console.error('Error recording blood usage:', error);
@@ -173,21 +342,6 @@ const BloodUsage: React.FC = () => {
     } finally {
       setUploadLoading(false);
     }
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      patient_id: '',
-      patient_name: '',
-      patient_age: '',
-      patient_gender: '',
-      blood_type: '',
-      usage_date: '',
-      hospital_department: '',
-      notes: ''
-    });
-    setError('');
-    setSuccess('');
   };
 
   const navigateToAddSample = () => {
@@ -251,7 +405,7 @@ const BloodUsage: React.FC = () => {
                   <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
                 </svg>
               </div>
-              <span className="nav-text">Add Sample</span>
+              <span className="nav-text">Blood Samples</span>
             </div>
             
             <div className="nav-item active" onClick={navigateToBloodUsage}>
@@ -303,223 +457,510 @@ const BloodUsage: React.FC = () => {
 
       {/* Main Content */}
       <div className="main-content">
-        <div className="form-container">
-          <h1 className="form-title">Blood Usage Entry</h1>
-          
-          {error && (
-            <div className="error-message">
-              {error}
+        <div className="content-container">
+          <div className="page-header">
+            <h1 className="page-title">Blood Usage Management</h1>
+            <div className="header-actions">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="filter-toggle-btn"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </button>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="add-usage-btn"
+              >
+                {showAddForm ? 'Cancel' : 'Add New Usage'}
+              </button>
             </div>
-          )}
+          </div>
 
-          {success && (
-            <div className="success-message">
-              {success}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="blood-usage-form">
-            {/* Patient Information Section */}
-            <div className="form-section">
-              <h2 className="section-title">Patient Information</h2>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">🆔</span>
-                    <input
-                      type="text"
-                      name="patient_id"
-                      placeholder="Patient ID"
-                      value={formData.patient_id}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">👤</span>
-                    <input
-                      type="text"
-                      name="patient_name"
-                      placeholder="Patient Name"
-                      value={formData.patient_name}
-                      onChange={handleInputChange}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="filter-panel">
+              <div className="filter-header">
+                <h3 className="filter-title">Filter Records</h3>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">🎂</span>
-                    <input
-                      type="number"
-                      name="patient_age"
-                      placeholder="Patient Age *"
-                      value={formData.patient_age}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input"
-                      min="0"
-                      max="120"
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">⚧</span>
-                    <select
-                      name="patient_gender"
-                      value={formData.patient_gender}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input form-select"
-                    >
-                      <option value="">Patient Gender *</option>
-                      {genders.map(gender => (
-                        <option key={gender} value={gender}>
-                          {gender === 'M' ? 'Male' : gender === 'F' ? 'Female' : 'Other'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Blood Usage Details Section */}
-            <div className="form-section">
-              <h2 className="section-title">Blood Usage Details</h2>
               
-              <div className="form-row">
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">🩸</span>
+              <div className="filter-content">
+                <div className="filter-row">
+                  <div className="filter-group">
+                    <label className="filter-label">Blood Group</label>
                     <select
-                      name="blood_type"
-                      value={formData.blood_type}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input form-select"
+                      name="blood_group"
+                      value={filters.blood_group}
+                      onChange={handleFilterChange}
+                      className="filter-select"
                     >
-                      <option value="">Blood Type *</option>
+                      <option value="">All Blood Groups</option>
                       {bloodTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
                       ))}
                     </select>
                   </div>
-                </div>
 
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon"></span>
+                  <div className="filter-group">
+                    <label className="filter-label">Patient Location</label>
                     <input
-                      type="date"
-                      name="usage_date"
-                      value={formData.usage_date}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input"
+                      type="text"
+                      name="patient_location"
+                      value={filters.patient_location}
+                      onChange={handleFilterChange}
+                      placeholder="Enter location..."
+                      className="filter-input"
                     />
-                    <label className="date-label">Usage Date:</label>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Medical Information Section */}
-            <div className="form-section">
-              <h2 className="section-title">Medical Information</h2>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">🏥</span>
+                  <div className="filter-group">
+                    <label className="filter-label">Records per page</label>
                     <select
-                      name="hospital_department"
-                      value={formData.hospital_department}
-                      onChange={handleInputChange}
-                      required
-                      className="form-input form-select"
+                      name="limit"
+                      value={filters.limit}
+                      onChange={handleFilterChange}
+                      className="filter-select"
                     >
-                      <option value="">Hospital Department *</option>
-                      {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={200}>200</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon"></span>
-                    <textarea
-                      name="notes"
-                      placeholder="Additional Notes (Optional)"
-                      value={formData.notes}
-                      onChange={handleInputChange}
-                      className="form-input form-textarea"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* CSV Upload Section */}
-            <div className="form-section">
-              <h2 className="section-title">Bulk Upload</h2>
-              <div className="csv-upload-container">
-                <div className="form-group">
-                  <div className="input-wrapper">
-                    <span className="input-icon">📄</span>
+                <div className="filter-row">
+                  <div className="filter-group">
+                    <label className="filter-label">Usage Date From</label>
                     <input
-                      type="file"
-                      id="csv-file"
-                      accept=".csv"
-                      onChange={handleFileChange}
-                      className="form-input file-input"
+                      type="date"
+                      name="usage_date_from"
+                      value={filters.usage_date_from}
+                      onChange={handleFilterChange}
+                      className="filter-input"
                     />
-                    <label htmlFor="csv-file" className="file-label">
-                      {csvFile ? csvFile.name : 'Choose CSV file for bulk usage upload...'}
-                    </label>
+                  </div>
+
+                  <div className="filter-group">
+                    <label className="filter-label">Usage Date To</label>
+                    <input
+                      type="date"
+                      name="usage_date_to"
+                      value={filters.usage_date_to}
+                      onChange={handleFilterChange}
+                      className="filter-input"
+                    />
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCsvUpload}
-                  disabled={!csvFile || uploadLoading}
-                  className="upload-btn"
-                >
-                  {uploadLoading ? 'Uploading...' : 'Upload CSV'}
-                </button>
+
+                <div className="filter-actions">
+                  <button
+                    onClick={applyFilters}
+                    className="apply-filters-btn"
+                  >
+                    Apply Filters
+                  </button>
+                  <button
+                    onClick={clearFilters}
+                    className="clear-filters-btn"
+                  >
+                    Clear All
+                  </button>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="form-actions">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="save-btn"
-              >
-                {isLoading ? 'Recording...' : 'Record Usage'}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="cancel-btn"
-              >
-                Cancel
-              </button>
+
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading usage records...</p>
             </div>
-          </form>
+          ) : (
+            <>
+              {/* Usage Records Table */}
+              <div className="table-container">
+                <h2 className="section-title">Blood Usage Records</h2>
+                
+                {usageRecords.length === 0 ? (
+                  <div className="no-records">
+                    <p>No usage records found.</p>
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table className="usage-table">
+                      <thead>
+                        <tr>
+                          <th>Usage ID</th>
+                          <th>Individual Name</th>
+                          <th>Blood Group</th>
+                          <th>Volume (ml)</th>
+                          <th>Purpose</th>
+                          <th>Department</th>
+                          <th>Location</th>
+                          <th>Usage Date</th>
+                          <th>Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {usageRecords.map((record) => (
+                          <tr key={record.usage_id}>
+                            <td className="usage-id">{record.usage_id}</td>
+                            <td className="name">{record.individual_name}</td>
+                            <td className="blood-group">
+                              <span className={`blood-type-badge blood-type-${record.blood_group.replace('+', 'pos').replace('-', 'neg')}`}>
+                                {record.blood_group}
+                              </span>
+                            </td>
+                            <td className="volume">{record.volume_given_out} ml</td>
+                            <td className="purpose">{record.purpose}</td>
+                            <td className="department">{record.department}</td>
+                            <td className="location">{record.patient_location}</td>
+                            <td className="date">{new Date(record.usage_date).toLocaleDateString()}</td>
+                            <td className="created">{new Date(record.created_at).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Pagination Controls */}
+                {usageRecords.length > 0 && (
+                  <div className="pagination-container">
+                    <div className="pagination-info">
+                      <span>
+                        Showing {filters.offset + 1} to {Math.min(filters.offset + filters.limit, totalRecords)} of {totalRecords} records
+                      </span>
+                    </div>
+                    
+                    <div className="pagination-controls">
+                      <button
+                        onClick={() => handlePageChange(Math.max(0, filters.offset - filters.limit))}
+                        disabled={filters.offset === 0}
+                        className="pagination-btn"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Previous
+                      </button>
+                      
+                      <div className="pagination-numbers">
+                        {Array.from({ length: Math.ceil(totalRecords / filters.limit) }, (_, i) => i).map(pageIndex => {
+                          const isCurrentPage = pageIndex * filters.limit === filters.offset;
+                          const pageNumber = pageIndex + 1;
+                          
+                          // Show only a few page numbers around current page
+                          const currentPageIndex = Math.floor(filters.offset / filters.limit);
+                          if (Math.abs(pageIndex - currentPageIndex) > 2 && pageIndex !== 0 && pageIndex !== Math.floor(totalRecords / filters.limit)) {
+                            return null;
+                          }
+                          
+                          return (
+                            <button
+                              key={pageIndex}
+                              onClick={() => handlePageChange(pageIndex * filters.limit)}
+                              className={`pagination-number ${isCurrentPage ? 'active' : ''}`}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      
+                      <button
+                        onClick={() => handlePageChange(filters.offset + filters.limit)}
+                        disabled={filters.offset + filters.limit >= totalRecords}
+                        className="pagination-btn"
+                      >
+                        Next
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Add Usage Form Modal */}
+              {showAddForm && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && handleCancel()}>
+                  <div className="modal-container">
+                    <div className="modal-header">
+                      <h2 className="modal-title">Add New Blood Usage</h2>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="modal-close-btn"
+                        aria-label="Close modal"
+                      >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="modal-content">
+                      <form onSubmit={handleSubmit} className="blood-usage-form">
+                        {/* Individual Information Section */}
+                        <div className="form-section">
+                          <h3 className="section-title">Individual Information</h3>
+                          
+                          <div className="form-row">
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">👤</span>
+                                <input
+                                  type="text"
+                                  name="individual_name"
+                                  placeholder="Individual Name *"
+                                  value={formData.individual_name}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">📍</span>
+                                <input
+                                  type="text"
+                                  name="patient_location"
+                                  placeholder="Patient Location *"
+                                  value={formData.patient_location}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="form-row">
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">🎯</span>
+                                <input
+                                  type="text"
+                                  name="purpose"
+                                  placeholder="Purpose/Reason *"
+                                  value={formData.purpose}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">🏥</span>
+                                <select
+                                  name="department"
+                                  value={formData.department}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input form-select"
+                                >
+                                  <option value="">Department *</option>
+                                  {departments.map(dept => (
+                                    <option key={dept} value={dept}>{dept}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Blood Usage Details Section */}
+                        <div className="form-section">
+                          <h3 className="section-title">Blood Usage Details</h3>
+                          
+                          <div className="form-row">
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">🩸</span>
+                                <select
+                                  name="blood_group"
+                                  value={formData.blood_group}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input form-select"
+                                >
+                                  <option value="">Blood Group *</option>
+                                  {bloodTypes.map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">🧪</span>
+                                <input
+                                  type="number"
+                                  name="volume_given_out"
+                                  placeholder="Volume Given Out (ml) *"
+                                  value={formData.volume_given_out}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input"
+                                  min="1"
+                                  max="5000"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="form-row">
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">📅</span>
+                                <input
+                                  type="date"
+                                  name="usage_date"
+                                  value={formData.usage_date}
+                                  onChange={handleInputChange}
+                                  required
+                                  className="form-input"
+                                />
+                                <label className="date-label">Usage Date:</label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* CSV Upload Section */}
+                        <div className="form-section">
+                          <h3 className="section-title">Bulk Upload (Optional)</h3>
+                          
+                          {/* CSV Format Guide */}
+                          <div className="csv-format-guide">
+                            <h4 className="guide-title">📋 CSV Format Requirements</h4>
+                            <p className="guide-description">Your CSV file must include the following columns with exact names:</p>
+                            
+                            <div className="format-grid">
+                              <div className="format-item required">
+                                <span className="field-name">purpose</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">Purpose of blood usage (string)</span>
+                              </div>
+                              
+                              <div className="format-item required">
+                                <span className="field-name">department</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">Department name</span>
+                              </div>
+                              
+                              <div className="format-item required">
+                                <span className="field-name">blood_group</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">A+, A-, B+, B-, AB+, AB-, O+, O-</span>
+                              </div>
+                              
+                              <div className="format-item required">
+                                <span className="field-name">volume_given_out</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">Volume in ml (1-10000, supports bulk usage)</span>
+                              </div>
+                              
+                              <div className="format-item required">
+                                <span className="field-name">usage_date</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">Date in YYYY-MM-DD format</span>
+                              </div>
+                              
+                              <div className="format-item optional">
+                                <span className="field-name">individual_name</span>
+                                <span className="field-type">Optional</span>
+                                <span className="field-description">Patient name</span>
+                              </div>
+                              
+                              <div className="format-item required">
+                                <span className="field-name">patient_location</span>
+                                <span className="field-type">Required</span>
+                                <span className="field-description">Hospital/location name</span>
+                              </div>
+                            </div>
+                            
+                            <div className="format-example">
+                              <strong>Example CSV header:</strong>
+                              <code>purpose,department,blood_group,volume_given_out,usage_date,individual_name,patient_location</code>
+                            </div>
+                          </div>
+
+                          <div className="csv-upload-container">
+                            <div className="form-group">
+                              <div className="input-wrapper">
+                                <span className="input-icon">📄</span>
+                                <input
+                                  type="file"
+                                  id="csv-file"
+                                  accept=".csv"
+                                  onChange={handleFileChange}
+                                  className="form-input file-input"
+                                />
+                                <label htmlFor="csv-file" className="file-label">
+                                  {csvFile ? csvFile.name : 'Choose CSV file for bulk usage upload...'}
+                                </label>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handleCsvUpload}
+                              disabled={!csvFile || uploadLoading}
+                              className="upload-btn"
+                            >
+                              {uploadLoading ? 'Uploading...' : 'Upload CSV'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Error and Success Messages */}
+                        {error && (
+                          <div className="modal-error-message">
+                            {error}
+                          </div>
+                        )}
+
+                        {success && (
+                          <div className="modal-success-message">
+                            {success}
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="modal-actions">
+                          <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="save-btn"
+                          >
+                            {isLoading ? 'Recording...' : 'Record Usage'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancel}
+                            className="cancel-btn"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

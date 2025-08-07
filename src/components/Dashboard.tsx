@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                   <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
                 </svg>
               </div>
-              <span className="nav-text">Add Sample</span>
+              <span className="nav-text">Blood Samples</span>
             </div>
             
             <div className="nav-item" onClick={navigateToBloodUsage}>
