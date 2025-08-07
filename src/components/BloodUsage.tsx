@@ -29,8 +29,8 @@ interface FilterParams {
   usage_date_from: string;
   usage_date_to: string;
   patient_location: string;
-  limit: number;
-  offset: number;
+  limit?: number;
+  offset?: number;
 }
 
 const BloodUsage: React.FC = () => {
@@ -134,8 +134,8 @@ const BloodUsage: React.FC = () => {
       
       // Build query parameters
       const queryParams = new URLSearchParams();
-      queryParams.append('limit', (currentFilters.limit || filters.limit).toString());
-      queryParams.append('offset', (currentFilters.offset || filters.offset).toString());
+      queryParams.append('limit', (currentFilters.limit ?? filters.limit ?? 100).toString());
+      queryParams.append('offset', (currentFilters.offset ?? filters.offset ?? 0).toString());
       
       if (currentFilters.blood_group) {
         queryParams.append('blood_group', currentFilters.blood_group);
@@ -633,14 +633,14 @@ const BloodUsage: React.FC = () => {
                   <div className="pagination-container">
                     <div className="pagination-info">
                       <span>
-                        Showing {filters.offset + 1} to {Math.min(filters.offset + filters.limit, totalRecords)} of {totalRecords} records
+                        Showing {(filters.offset ?? 0) + 1} to {Math.min((filters.offset ?? 0) + (filters.limit ?? 100), totalRecords)} of {totalRecords} records
                       </span>
                     </div>
                     
                     <div className="pagination-controls">
                       <button
-                        onClick={() => handlePageChange(Math.max(0, filters.offset - filters.limit))}
-                        disabled={filters.offset === 0}
+                        onClick={() => handlePageChange(Math.max(0, (filters.offset ?? 0) - (filters.limit ?? 100)))}
+                        disabled={(filters.offset ?? 0) === 0}
                         className="pagination-btn"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -650,20 +650,20 @@ const BloodUsage: React.FC = () => {
                       </button>
                       
                       <div className="pagination-numbers">
-                        {Array.from({ length: Math.ceil(totalRecords / filters.limit) }, (_, i) => i).map(pageIndex => {
-                          const isCurrentPage = pageIndex * filters.limit === filters.offset;
+                        {Array.from({ length: Math.ceil(totalRecords / (filters.limit ?? 100)) }, (_, i) => i).map(pageIndex => {
+                          const isCurrentPage = pageIndex * (filters.limit ?? 100) === (filters.offset ?? 0);
                           const pageNumber = pageIndex + 1;
                           
                           // Show only a few page numbers around current page
-                          const currentPageIndex = Math.floor(filters.offset / filters.limit);
-                          if (Math.abs(pageIndex - currentPageIndex) > 2 && pageIndex !== 0 && pageIndex !== Math.floor(totalRecords / filters.limit)) {
+                          const currentPageIndex = Math.floor((filters.offset ?? 0) / (filters.limit ?? 100));
+                          if (Math.abs(pageIndex - currentPageIndex) > 2 && pageIndex !== 0 && pageIndex !== Math.floor(totalRecords / (filters.limit ?? 100))) {
                             return null;
                           }
                           
                           return (
                             <button
                               key={pageIndex}
-                              onClick={() => handlePageChange(pageIndex * filters.limit)}
+                              onClick={() => handlePageChange(pageIndex * (filters.limit ?? 100))}
                               className={`pagination-number ${isCurrentPage ? 'active' : ''}`}
                             >
                               {pageNumber}
@@ -673,8 +673,8 @@ const BloodUsage: React.FC = () => {
                       </div>
                       
                       <button
-                        onClick={() => handlePageChange(filters.offset + filters.limit)}
-                        disabled={filters.offset + filters.limit >= totalRecords}
+                        onClick={() => handlePageChange((filters.offset ?? 0) + (filters.limit ?? 100))}
+                        disabled={(filters.offset ?? 0) + (filters.limit ?? 100) >= totalRecords}
                         className="pagination-btn"
                       >
                         Next
