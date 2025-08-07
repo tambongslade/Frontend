@@ -37,7 +37,7 @@ const FeedbackAnalytics = () => {
     try {
       setLoading(true)
       // Note: You'll need to replace this with the actual Track3 feedback API endpoint
-      const response = await fetch('https://scary-transparent-mauritius-notes.trycloudflare.com/api/dashboard/stats')
+      const response = await fetch('https://foam-quarterly-stockings-elect.trycloudflare.com/api/dashboard/stats')
       if (!response.ok) {
         throw new Error('Failed to fetch data')
       }
