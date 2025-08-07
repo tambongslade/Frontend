@@ -103,41 +103,84 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="dashboard-container">
-      {/* Sidebar */}
-      <div className="sidebar">
+      {/* Professional Sidebar */}
+      <div className="professional-sidebar">
         <div className="sidebar-header">
-          <div className="logo" onClick={navigateToDashboard} style={{ cursor: 'pointer' }} title="Dashboard Home">
-            🏠
+          <div className="brand-logo" onClick={navigateToDashboard} style={{ cursor: 'pointer' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="brand-text">CareChat</span>
           </div>
         </div>
         
-        <div className="sidebar-menu">
-          <div className="menu-item" onClick={navigateToAddSample} title="Add Sample">
-            <span className="menu-icon">+</span>
+        <nav className="sidebar-navigation">
+          <div className="nav-section">
+            <div className="nav-item active" onClick={navigateToDashboard}>
+              <div className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="9,22 9,12 15,12 15,22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="nav-text">BloodBank </span>
+            </div>
+            
+            <div className="nav-item" onClick={navigateToAddSample}>
+              <div className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              <span className="nav-text">Add Sample</span>
+            </div>
+            
+            <div className="nav-item" onClick={navigateToBloodUsage}>
+              <div className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span className="nav-text">Blood Usage</span>
+            </div>
+            
+            <div className="nav-item" onClick={navigateToForecasting}>
+              <div className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="12" y1="20" x2="12" y2="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="18" y1="20" x2="18" y2="4" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="6" y1="20" x2="6" y2="16" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              <span className="nav-text">Forecasting</span>
+            </div>
+            
+            <div className="nav-item" onClick={navigateToFeedbackAnalytics}>
+              <div className="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+              <span className="nav-text">Feedback Analytics </span>
+            </div>
           </div>
-          <div className="menu-item" onClick={navigateToBloodUsage} title="Blood Usage">
-            <span className="menu-icon">🩸</span>
-          </div>
-          <div className="menu-item active" onClick={navigateToDashboard} title="Dashboard">
-            <span className="menu-icon">🏠</span>
-          </div>
-          <div className="menu-item" onClick={navigateToForecasting} title="Forecasting">
-            <span className="menu-icon">📊</span>
-          </div>
-          <div className="menu-item" onClick={navigateToFeedbackAnalytics} title="Feedback Analytics">
-            <span className="menu-icon">📈</span>
-          </div>
-        </div>
+        </nav>
 
         <div className="sidebar-footer">
-          <div className="menu-item logout" onClick={handleLogout} title="Logout">
-            <span className="menu-icon">
+          <div className="nav-item logout-item" onClick={handleLogout}>
+            <div className="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <polyline points="16,17 21,12 16,7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </span>
+            </div>
+            <span className="nav-text">Logout</span>
           </div>
         </div>
       </div>
@@ -152,16 +195,32 @@ const Dashboard: React.FC = () => {
               placeholder="Search..." 
               className="search-input"
             />
-            <span className="search-icon">🔍</span>
+            <div className="search-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="m21 21-4.35-4.35" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
           </div>
           
           <div className="header-actions">
             <div className="language-selector">
-              <span className="flag">🇺🇸</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <path d="M2 12h20" stroke="currentColor" strokeWidth="2"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
               <span>English</span>
-              <span className="dropdown-arrow">▼</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="6,9 12,15 18,9" stroke="currentColor" strokeWidth="2"/>
+              </svg>
             </div>
-            <div className="settings-icon">⚙️</div>
+            <div className="settings-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
           </div>
         </div>
 
