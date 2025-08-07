@@ -130,8 +130,8 @@ const AddSample: React.FC = () => {
       
       // Build query parameters
       const queryParams = new URLSearchParams();
-      queryParams.append('limit', currentFilters.limit.toString());
-      queryParams.append('offset', currentFilters.offset.toString());
+      queryParams.append('limit', (currentFilters.limit || filters.limit).toString());
+      queryParams.append('offset', (currentFilters.offset || filters.offset).toString());
       
       if (currentFilters.blood_type) {
         queryParams.append('blood_type', currentFilters.blood_type);

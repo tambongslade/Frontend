@@ -134,8 +134,8 @@ const BloodUsage: React.FC = () => {
       
       // Build query parameters
       const queryParams = new URLSearchParams();
-      queryParams.append('limit', currentFilters.limit.toString());
-      queryParams.append('offset', currentFilters.offset.toString());
+      queryParams.append('limit', (currentFilters.limit || filters.limit).toString());
+      queryParams.append('offset', (currentFilters.offset || filters.offset).toString());
       
       if (currentFilters.blood_group) {
         queryParams.append('blood_group', currentFilters.blood_group);
